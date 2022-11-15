@@ -918,25 +918,28 @@ def field_singleton_schema(  # noqa: C901 (ignore complexity)
     if lenient_issubclass(getattr(field_type, '__pydantic_model__', None), BaseModel):
         field_type = field_type.__pydantic_model__
 
-    if issubclass(field_type, BaseModel):
-        model_name = model_name_map[field_type]
-        if field_type not in known_models:
-            sub_schema, sub_definitions, sub_nested_models = model_process_schema(
-                field_type,
-                by_alias=by_alias,
-                model_name_map=model_name_map,
-                ref_prefix=ref_prefix,
-                ref_template=ref_template,
-                known_models=known_models,
-                field=field,
-            )
-            definitions.update(sub_definitions)
-            definitions[model_name] = sub_schema
-            nested_models.update(sub_nested_models)
-        else:
-            nested_models.add(model_name)
-        schema_ref = get_schema_ref(model_name, ref_prefix, ref_template, schema_overrides)
-        return schema_ref, definitions, nested_models
+    try:
+        if issubclass(field_type, BaseModel):
+            model_name = model_name_map[field_type]
+            if field_type not in known_models:
+                sub_schema, sub_definitions, sub_nested_models = model_process_schema(
+                    field_type,
+                    by_alias=by_alias,
+                    model_name_map=model_name_map,
+                    ref_prefix=ref_prefix,
+                    ref_template=ref_template,
+                    known_models=known_models,
+                    field=field,
+                )
+                definitions.update(sub_definitions)
+                definitions[model_name] = sub_schema
+                nested_models.update(sub_nested_models)
+            else:
+                nested_models.add(model_name)
+            schema_ref = get_schema_ref(model_name, ref_prefix, ref_template, schema_overrides)
+            return schema_ref, definitions, nested_models
+    except TypeError as err:
+        raise TypeError(f'{err} on {field_type} {BaseModel}')
 
     # For generics with no args
     args = get_args(field_type)
